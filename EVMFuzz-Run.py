@@ -177,6 +177,7 @@ def main():
         shutil.copyfile(dirPATH+contract, dirPATH + "bincode"+str(index)+"/"+contract)
 
         # muti-EVM run
+        
         retcode = subprocess.call(
             "/usr/local/bin/node " + PROJECT_DIR + "/jsEVM/js_runcode.js --code " + bincode + " --sig " + sigName + " > " + dirPATH + "output/jsout.json",
             shell=True)
@@ -198,7 +199,7 @@ def main():
         print(retcode)
 
         retcode = subprocess.call(
-            "./aleth-vm  --code " + bincode + " --input " + sigName + " --mnemonics" + " >> " + dirPATH + "output/aleout.json",
+            "./aleth-vm  --code " + bincode + "--input " + sigName + " --mnemonics" + " >> " + dirPATH + "output/aleout.json",
             shell=True)
         print(str(retcode)+"cpprun2")
 
