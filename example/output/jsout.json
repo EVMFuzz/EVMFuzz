@@ -1,0 +1,13 @@
+{"pc":0,"op":96,"gas":"0xffffffff","gasCost":"0x3","stack":[],"depth":0,"opName":"PUSH1"}
+{"pc":2,"op":96,"gas":"0xfffffffc","gasCost":"0x3","stack":["0x80"],"depth":0,"opName":"PUSH1"}
+{"pc":4,"op":82,"gas":"0xfffffff9","gasCost":"0x3","stack":["0x80","0x40"],"depth":0,"opName":"MSTORE"}
+{"pc":5,"op":96,"gas":"0xffffffed","gasCost":"0x3","stack":[],"depth":0,"opName":"PUSH1"}
+{"pc":7,"op":54,"gas":"0xffffffea","gasCost":"0x2","stack":["0x4"],"depth":0,"opName":"CALLDATASIZE"}
+{"pc":8,"op":16,"gas":"0xffffffe8","gasCost":"0x3","stack":["0x4","0x0"],"depth":0,"opName":"LT"}
+{"pc":9,"op":97,"gas":"0xffffffe5","gasCost":"0x3","stack":["0x1"],"depth":0,"opName":"PUSH2"}
+{"pc":12,"op":87,"gas":"0xffffffe2","gasCost":"0xa","stack":["0x1","0x57"],"depth":0,"opName":"JUMPI"}
+{"pc":87,"op":91,"gas":"0xffffffd8","gasCost":"0x1","stack":[],"depth":0,"opName":"JUMPDEST"}
+{"pc":88,"op":96,"gas":"0xffffffd7","gasCost":"0x3","stack":[],"depth":0,"opName":"PUSH1"}
+{"pc":90,"op":128,"gas":"0xffffffd4","gasCost":"0x3","stack":["0x0"],"depth":0,"opName":"DUP1"}
+{"pc":91,"op":253,"gas":"0xffffffd1","gasCost":"0x0","stack":["0x0","0x0"],"depth":0,"opName":"REVERT"}
+{"output":"","gasUsed":"0x2e"}

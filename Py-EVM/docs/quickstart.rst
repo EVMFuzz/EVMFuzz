@@ -1,0 +1,1 @@
+.. include:: guides/trinity/quickstart.rst
