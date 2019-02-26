@@ -8,9 +8,11 @@ import numpy as np
 import heapq
 
 contractList = []
+diff_pri = {}  # an empty dict
+time_pri = {}
 
-PROJECT_DIR = "path~to~EVMFuzz"
-dirPATH = PROJECT_DIR+"/example/"
+PROJECT_DIR = "path/to/EVMFuzz"
+dirPATH = PROJECT_DIR + "/example/"
 
 def parse_args():
     """
@@ -42,19 +44,6 @@ def preProcess(fileName):
 
     f1.close()
     f2.close()
-
-def find_sub_max(arr, n):
-    if n == 1 :
-        return np.argmax(arr) + 1
-    elif n == len(arr) :
-        return np.argmin(arr) + 1
-    else :
-        arr_ = arr
-        for i in range(n-1):
-            arr_ = arr
-            arr_[np.argmax(arr_)] = np.min(arr)
-            arr = arr_
-        return np.argmax(arr_) + 1
 
 
 def update_weight(fileName, combination):
@@ -95,7 +84,7 @@ def update_weight(fileName, combination):
     return choice
 
 def editLine(filename, lineno, diff):
-    fro = open(dirPATH+filename, "r")
+    fro = open(dirPATH + filename, "r")
 
     current_line = 0
     while current_line < lineno:
@@ -103,12 +92,12 @@ def editLine(filename, lineno, diff):
         current_line += 1
 
     seekpoint = fro.tell()
-    frw = open(dirPATH+filename, "r+")
+    frw = open(dirPATH + filename, "r+")
     frw.seek(seekpoint, 0)
 
     # read the line we want to discard
-    test=fro.readline() 
-    test=diff
+    test = fro.readline()
+    test = diff
     frw.writelines(test)
 
     # now move the rest of the lines in the file
@@ -121,6 +110,21 @@ def editLine(filename, lineno, diff):
     fro.close()
     frw.truncate()
     frw.close()
+
+
+def scheduling(contractList, diff_pri, time_pri):  # DPSA
+	sortList = []
+	priority = {}
+	for i in range(len(contractList)):
+		priority[i] = diff_pri[contractList[i]] + time_pri[contractList[i]]
+	# sorted by priority
+	data = [(pri, name) for pri, name in zip(priority, contractList)]
+	data.sort(reverse=True)
+	sortList = [name for pri, name in data]
+	# update time priority
+	for i in range(1, len(contractList)):
+		time_pri[contractList[i]] += 1
+	return sortList
 
 
 def main():
@@ -136,62 +140,68 @@ def main():
 
     # initial seed
     contractList.append(fileName)
-
     index = 0
 
     # mutate 50 times
-    while index<=50:
-        a = index % (len(contractList))
-        fileName = contractList[a]
+    while index <= 50:
+        # a = index % (len(contractList))
+        if index == 0:
+        	pass
+        else:
+        	contractList = scheduling(contractList, diff_pri, time_pri)
+        fileName = contractList[0]
 
-        if index==0:
-            contract=fileName
+        if index == 0:
+            contract = fileName
         else:
             # mutate
             choice = update_weight("mutator_diff", 2) # mutator list
-            shutil.copyfile(dirPATH + fileName, dirPATH + fileName.split(".sol")[0]+"_" + str(index)+".sol" )
-            print("mutate len"+str(len(choice)))
+            shutil.copyfile(dirPATH + fileName, dirPATH + fileName.split(".sol")[0] + "_" + str(index) + ".sol" )
+            print("mutate len" + str(len(choice)))
+
             for i in range(len(choice)) :
                 print("mutate choice" + str(choice[i]))
                 retcode = subprocess.call(
-                    "python2.7 "+PROJECT_DIR + "/mutate/mutators_weight.py --file " +fileName.split(".sol")[0]+"_" + str(index)+".sol"  + " --func " + funcName + " --select " + str(choice[i])+ " --dirPATH "+dirPATH,
+                    "python2.7 "+ PROJECT_DIR + "/mutate/mutators_weight.py --file " + fileName.split(".sol")[0] + "_" + str(index) + ".sol" + " --func " + funcName + " --select " + str(choice[i]) + " --dirPATH "+ dirPATH,
                     shell=True)
-                if retcode==1 :
+                if retcode == 1 :
                     continue
 
-                print(retcode)
-                print("mutate")
-
-                contract = fileName.split(".sol")[0]+"_" + str(index)+".sol"
-
+                # print(retcode)
+                print("mutating...")
+                contract = fileName.split(".sol")[0] + "_" + str(index) + ".sol"
 
         # use solc compile
-        retcode = subprocess.call("solc --bin-runtime " + dirPATH + contract + " -o " + dirPATH + "bincode"+str(index), shell=True)
-        print(retcode)
-        if(retcode==1):
+        retcode = subprocess.call("solc --bin-runtime " + dirPATH + contract + " -o " + dirPATH + "bincode" + str(index), shell=True)
+        # print(retcode)
+        if(retcode == 1):
             continue
         # read bincode
-        codefile = open(dirPATH + "bincode"+str(index)+"/" + binName + ".bin-runtime", "r")
+        codefile = open(dirPATH + "bincode" + str(index) + "/" + binName + ".bin-runtime", "r")
         bincode = codefile.read()
         codefile.close()
-        shutil.copyfile(dirPATH+contract, dirPATH + "bincode"+str(index)+"/"+contract)
+        shutil.copyfile(dirPATH + contract, dirPATH + "bincode" + str(index) + "/" + contract)
 
         # muti-EVM run
-        
         retcode = subprocess.call(
             "/usr/local/bin/node " + PROJECT_DIR + "/jsEVM/js_runcode.js --code " + bincode + " --sig " + sigName + " > " + dirPATH + "output/jsout.json",
             shell=True)
-        print(str(retcode)+"jsrun")
+        print(str(retcode) + "jsrun")
+
+        retcode = subprocess.call(
+            "evm --code " + bincode + " --input " + sigName + " > " + dirPATH + "output/gethout.json",
+            shell=True)
+        print(str(retcode) + "gethrun")
 
         retcode = subprocess.call(
             "python3 " + PROJECT_DIR + "/Py-EVM/py_runcode.py --data " + bincode + " --sig " + sigName + " > " + dirPATH + "output/pyout.json",
             shell=True)
-        print(str(retcode)+"pyrun")
+        print(str(retcode) + "pyrun")
 
         retcode = subprocess.call(
             "./aleth-vm trace --code " + bincode + " --mnemonics --input " + sigName + " > " + dirPATH + "output/aletraceout",
             shell=True)
-        print(str(retcode)+"cpprun")
+        # print(str(retcode) + "cpprun-0")
 
         retcode = subprocess.call(
             "python3 " + PROJECT_DIR + "/aleth/convert_json.py " + dirPATH + "output/aletraceout " + " > " + dirPATH + "output/aleout.json",
@@ -201,7 +211,7 @@ def main():
         retcode = subprocess.call(
             "./aleth-vm  --code " + bincode + "--input " + sigName + " --mnemonics" + " >> " + dirPATH + "output/aleout.json",
             shell=True)
-        print(str(retcode)+"cpprun2")
+        print(str(retcode) + "cpprun")
 
         time.sleep(5)
 
@@ -226,9 +236,13 @@ def main():
             diffFile = open(dirPATH + "diff", "w")
             diffFile.write(str(newdiff))
             diffFile.close()
-            contractList.append(contract)
 
-        if index==0:
+            contractList.append(contract)
+            # record priority
+            diff_pri[contract] = newdiff
+            time_pri[contract] = 0
+
+        if index == 0:
             diffhistory = open(dirPATH + "diffHis", "a")
             diffhistory.write(contract + "_" + "first" + "_" + str(newdiff).strip() + '\n')
             diffhistory.close()
@@ -240,18 +254,16 @@ def main():
 
 
         # write mutator_diff file
-        if index==0:
+        if index == 0:
             mutatordiffFile = open(dirPATH + "mutator_diff", "w")
             for i in range(1, 9):
-                mutatordiffFile.write(str(newdiff).strip()+'\n')
+                mutatordiffFile.write(str(newdiff).strip() + '\n')
             mutatordiffFile.close()
         else:
             for i in range(len(choice)):
-                editLine("mutator_diff",choice[i]-1,str(newdiff).strip()+'\n')
+                editLine("mutator_diff", choice[i]-1, str(newdiff).strip() + '\n')
 
         index += 1
-
-
 
 if __name__ == '__main__':
     main()
