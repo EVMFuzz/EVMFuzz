@@ -1,3 +1,0 @@
-eth
-p2p
-trinity
